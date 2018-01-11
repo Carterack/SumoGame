@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Sumo</title>
+		<link rel="stylesheet" type="text/css" href="style.css">
+		<script src="/socket.io/socket.io.js"></script>
+		<link href='https://fonts.googleapis.com/css?family=Joti One' rel='stylesheet'>
+			<style>
+				body {
+					font-family: 'Joti One';font-size: 22px;
+				}
+			</style>
+	</head>
+
+	<body>
+		<p align="center">Looking for Player...</p><p id="looking" align="center"></p> <p align="center" id="color"></p>
+		
+		<canvas id="spaceCanvas" width="1393" height="955" ></canvas>
+		<canvas id="toolbar" width="1393" height="110" style="border: 1px solid;"></canvas>
+		<div id = "underCanvas"></div>
+		
+
+		
+		<script src = "spaceScript.js"></script>
+		
+	<script> 
+		var player;
+		
+		var room;
+		var playerFound = " ";
+		var socket = io();
+		var red;
+		var blue;
+		
+		function connectToServer() {
+			socket.emit('which player', "");
+			
+		}
+		connectToServer();
+		socket.on('this player', function(msg){
+			player = msg;
+			console.log(player + "0 is red, 1 is blue");
+		});
+		console.log(playerFound);
+		socket.on('get room', function(msg) {
+			room = msg;
+			console.log(room);
+		});
+		
+		socket.on('opponent found', function(msg){
+			playerFound = msg;
+			 document.getElementById("looking").innerHTML = playerFound;
+			console.log(playerFound);
+			//socket.emit
+		});
+		
+		socket.on('red', function(msg){
+			red = msg;
+			document.getElementById("color").innerHTML = red;
+			console.log(red);
+		});
+		
+		socket.on('blue', function(msg){
+			blue = msg;
+			document.getElementById("color").innerHTML = blue;
+		});
+		
+	
+	
+	var playClick = true;
+	var gameEnd = false;
+	var gameStart = false;
+	
+	var instructPressed = new Image();
+instructPressed.src = "images/OInstructions_P.png";
+
+	var replayImgPressed = new Image();
+replayImgPressed.src = "images/PlayAgain_P.png";
+
+var instructNotPressed = new Image();
+instructNotPressed.src = "images/OInstructions_UP.png";
+
+var replayImgNotPressed = new Image();
+replayImgNotPressed.src = "images/PlayAgain_UP.png";
+	function instructionScreen()
+{	
+	var testCoords; // to be used for click detection on a canvas shape
+	
+	function checkCursorPositionOnClick(e)
+	{ 
+		if(!(gameStart == true && gameEnd == false)){
+		function onCanvasClick(e) 
+		{	
+			//alert(getCursorPosition(e)); //use this to find coords of play button
+		  	testCoords = getCursorPosition(e);
+		  	if(playClick && testCoords[0] >= 300 && testCoords[0] <= 520 && testCoords[1] >=364 && testCoords[1] <=464&& (playerFound !=" ")) //play button coords
+		  	{	
+		  		//code goes here if click hits target
+		  		
+		  		setTimeout(function(){
+		  			ctx.drawImage(instructPressed, 0,0, canvas.width, canvas.height);}, 0);
+		  		playClick = false;
+				socket.emit('play game', room);
+		  		//setTimeout(function(){playGame();}, 1000);
+
+		  	};
+		  	//replay button
+		  	if(testCoords[0] >= 735 && testCoords[0] <= 793 && testCoords[1] >=550 && testCoords[1] <=600 ){
+		  		
+		  		toolCtx.clearRect(0,0,toolCanvas.width, toolCanvas.height);
+				//socket.emit('replay game','msg');
+		  		setTimeout(function(){
+		  			toolCtx.drawImage(replayImgPressed, toolCanvas.width-120, 0, toolCanvas.height, toolCanvas.height);}, 0);
+
+				socket.emit('replay game', room);
+		  		//setTimeout(function(){
+		  			//location.reload();},500);
+		  	}
+		};
+		 
+		function getCursorPosition(e) 
+		{
+		  	var x;
+		    var y;
+		    if (e.pageX != undefined && e.pageY != undefined) {
+				x = e.pageX;
+				y = e.pageY;
+		    }
+		    else {
+				x = e.clientX + document.body.scrollLeft +
+		            document.documentElement.scrollLeft;
+				y = e.clientY + document.body.scrollTop +
+		            document.documentElement.scrollTop;
+		    }
+		  	x -= canvas.offsetLeft;
+		    y -= canvas.offsetTop;
+		    
+		    return [x,y];
+		};
+
+		canvas.addEventListener("mouseup", onCanvasClick, false);
+		toolCanvas.addEventListener("mouseup", onCanvasClick, false);
+		}
+	};
+
+	window.onload = function(){
+		ctx.drawImage(instructNotPressed, 0,0, canvas.width, canvas.height);
+		toolCtx.drawImage(replayImgNotPressed, toolCanvas.width-120, 0, toolCanvas.height, toolCanvas.height);
+		checkCursorPositionOnClick(canvas);	
+		
+	}
+	
+}
+
+instructionScreen(); //playGame is called
+
+var spaceCounter = 0; 
+var enterCounter = 0;
+
+function checkKeyPressed(key)
+{ 	
+	if(gameEnd || !gameStart){}
+
+	else if(key.keyCode == "32"){
+		if(player == 0){
+		socket.emit('space pressed',room);
+		}
+		if(player ==1) {
+		socket.emit('enter pressed',room);
+		}
+	}
+
+	changeBorderColor();
+};
+socket.on('enter', function(msg){
+		enterCounter += 1;
+		sumos_x -= 20
+		animateDuringGame();
+	});
+socket.on('space', function(msg){
+		spaceCounter += 1;
+		sumos_x +=20
+		animateDuringGame();
+	});
+socket.on('start the game', function(msg){
+		playGame();
+	});
+socket.on('replay', function(msg){
+	location.reload();
+});
+
+	</script>
+</body>
+</html>
